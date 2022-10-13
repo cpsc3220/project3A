@@ -1,4 +1,4 @@
-# CPSC/ECE 3200: Introduction to Operating System - Project #3
+# CPSC/ECE 3220: Introduction to Operating System - Project #3
 
 In this project, you will work on two programs that help you (1) to be familiar with the concepts 
 of threads, synchronization, and multi-threaded programming design patterns; 
