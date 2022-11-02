@@ -335,7 +335,7 @@ ReadLine(BufferedLine *line) {
     nleft = sizeof(line->buffer);
 
     while (nleft > 0) {
-        if (read(1, &c, sizeof(c)) != 1)    // no data to read, end-of-file or error
+        if (read(0, &c, sizeof(c)) != 1)    // no data to read, end-of-file or error
             break;
         if (c == '\n' || c == EOF)          // stop after seeing a new line
             break;
@@ -440,18 +440,26 @@ int
 GetCommand(ShellState *shell) {
     write(1, shell->prompt, strlen(shell->prompt));
     ClearLine(&shell->cmdline);
-    ReadLine(&shell->cmdline);
-    Tokenize(&shell->cmdline, &shell->tokens);
-    PrintTokenList(&shell->tokens);
-    struct TokenList *tl = &(shell->tokens);
+    int ret;
+    if (0 < (ret = ReadLine(&shell->cmdline))) {
 
-    shell->_cmd_data.n_simples = 0;
-    shell->_cmd_data._pipeline.len = 0;
-    ParseCommand(tl->tokens, tl->tokens + tl->len, &shell->_cmd_data);
-    shell->cmd = &(shell->_cmd_data.cmd);
+        Tokenize(&shell->cmdline, &shell->tokens);
+	//Uncomment to print all the tokens
+        //PrintTokenList(&shell->tokens);
+        struct TokenList *tl = &(shell->tokens);
 
-    PrintCommand(shell->cmd, "");
-    return 0;
+        shell->_cmd_data.n_simples = 0;
+        shell->_cmd_data._pipeline.len = 0;
+        ParseCommand(tl->tokens, tl->tokens + tl->len, &shell->_cmd_data);
+        shell->cmd = &(shell->_cmd_data.cmd);
+	//Uncomment to see the processed commands
+        //PrintCommand(shell->cmd, "");
+    }
+    else {
+        shell->should_run = NO;
+        shell->last_exit_status = ret;
+    }
+    return ret;
 }
 
 
@@ -507,8 +515,9 @@ main(int argc, char *argv[]) {
     this_shell.cmd = &(this_shell._cmd_data.cmd);
 
     while (this_shell.should_run) {
-        GetCommand(&this_shell);
-        RunCommand(&this_shell);
+        if (0 < GetCommand(&this_shell)) {
+            RunCommand(&this_shell);
+        }
     }
 
     printf("%s (%d) was terminated\n", this_shell.name, getpid());
